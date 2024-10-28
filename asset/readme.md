@@ -1,0 +1,1 @@
+Disini khusus asset
