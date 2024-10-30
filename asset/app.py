@@ -4,6 +4,7 @@ import altair as alt
 import plotly.express as px
 from dashscope import Application
 import dashscope
+from fuzzywuzzy import fuzz, process
 from env import API
 
 # Part 1: Config
@@ -156,6 +157,21 @@ def calculate_asset_optimization(input_df):
 
     return pd.concat([selected_condition_data.provinsi, selected_condition_data.name, selected_condition_data.potential, selected_condition_data.value], axis=1).sort_values(by="potential", ascending=False)
 
+def find_best_match(input_text, choices, threshold=80):
+    match, score = process.extractOne(input_text, choices)
+    if score >= threshold:
+        return match
+    else:
+        return None
+
+def find_closest_match(keyword, column_data, threshold=70):
+    # Menggunakan fuzzy matching untuk menemukan kecocokan tertinggi
+    best_match = process.extractOne(keyword, column_data)
+    if best_match and best_match[1] >= threshold:  # Menentukan ambang batas kecocokan
+        return best_match[0]
+    else:
+        return None
+
 # Part 3: Sidebar
 with st.sidebar:
     st.title('Filter Data & Ask Our AI')
@@ -208,11 +224,33 @@ with st.sidebar:
 
         # Add user message to session state
         st.session_state.messages.append({"role": "user", "content": prompting})
-        st.sidebar.markdown(f"**User**: {prompting}")
+        # Abaikan dibawah
+        # st.sidebar.markdown(f"**User**: {prompting}")
+        # search_prompt = prompting
+        # search_prompt = find_best_match(prompting, df_reshaped['provinsi'].tolist())
+        # if search_prompt is None:
+        #     search_prompt = find_closest_match(prompting, df_reshaped['provinsi'].tolist())
+        #     if search_prompt is None:
+        #         search_prompt = "NA"
+        #     else:
+        #         prompting = search_prompt
+        # else:
+        #     prompting = search_prompt
 
         # AI response simulation (you can replace this with actual AI model integration)
         with st.sidebar.container():
-            # Simulate response generation
+            # Simulate response generation based on location
+            search_prompt = prompting
+            search_prompt = find_best_match(prompting, df_reshaped['provinsi'].tolist())
+            if search_prompt is None:
+                search_prompt = find_closest_match(prompting, df_reshaped['provinsi'].tolist())
+                if search_prompt is None:
+                    search_prompt = "Tiada Data"
+                else:
+                    prompting = search_prompt
+            else:
+                prompting = search_prompt
+            
             location_data = df_reshaped[df_reshaped['provinsi'].str.contains(prompting, case=False, na=False)]
             if not location_data.empty:
                 recommendations = []
@@ -221,10 +259,30 @@ with st.sidebar:
                     recommendations.append(f"- **{row['name']}** in **{row['provinsi']}**: {rec}")
                 full_response = "\n".join(recommendations)
             else:
-                full_response = f"No data available for the location: {prompting}. Please try another location."
+                search_prompt = prompting
+                search_prompt = find_best_match(prompting, df_reshaped['condition'].tolist())
+                if search_prompt is None:
+                    search_prompt = find_closest_match(prompting, df_reshaped['provinsi'].tolist())
+                    if search_prompt is None:
+                        search_prompt = "Tiada Data"
+                    else:
+                        prompting = search_prompt
+                else:
+                    prompting = search_prompt
+                
+                condition_data = df_reshaped[df_reshaped['condition'].str.contains(prompting, case=False, na=False)]
+                if not condition_data.empty:
+                    recommendations = []
+                    for _, row in condition_data.iterrows():
+                        rec = recommend_utilization(row['value'], row['condition'])
+                        recommendations.append(f"- **{row['name']}** in **{row['provinsi']}**: {rec}")
+                    full_response = "\n".join(recommendations)
+                else:
+                    full_response = f"No data available for the location: {prompting}. Please try another location."
 
             # Display assistant response
-            st.sidebar.markdown(f"**Assistant**: {full_response}")
+            # st.sidebar.markdown(f"**Assistant**: {full_response}")
+            st.sidebar.markdown(f"{full_response}")
             st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 col = st.columns((1.5, 4.5, 2), gap='medium')
