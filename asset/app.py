@@ -131,13 +131,13 @@ def recommend_utilization(value, condition):
     Function to recommend asset utilization based on value and condition.
     """
     if condition == 'Well Maintained' and value > 1000000:
-        return "The asset is in good condition and high value. Consider leasing or optimizing it for better returns."
+        return "The asset is in good condition and high value. Consider leasing or optimizing it for better returns. Potential value " + str(value)
     elif condition == 'Needs Repair' and value > 500000:
-        return "The asset may still be valuable. Consider minor renovations and leasing it."
+        return "The asset may still be valuable. Consider minor renovations and leasing it. Potential value " + str(value)
     elif condition == 'Slightly Damaged':
-        return "The asset is in poor condition. Consider selling or redeveloping the area."
+        return "The asset is in poor condition. Consider selling or redeveloping the area. Potential value " + str(value)
     else:
-        return "Maintain the asset as-is and monitor for future investment opportunities."
+        return "Maintain the asset as-is and monitor for future investment opportunities. Potential value " + str(value)
 
 def calculate_asset_optimization(input_df):
     if selected_location != 'All' and selected_condition == 'All':
@@ -279,7 +279,10 @@ with st.sidebar:
                     full_response = "\n".join(recommendations)
                 else:
                     full_response = f"No data available for the location: {prompting}. Please try another location."
-
+            
+            response = call_agent_app(full_response)
+            full_response = ""
+            full_response += response.output["text"]
             # Display assistant response
             # st.sidebar.markdown(f"**Assistant**: {full_response}")
             st.sidebar.markdown(f"{full_response}")
