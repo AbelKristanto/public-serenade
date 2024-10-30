@@ -278,7 +278,7 @@ with st.sidebar:
                         recommendations.append(f"- **{row['name']}** in **{row['provinsi']}**: {rec}")
                     full_response = "\n".join(recommendations)
                 else:
-                    full_response = f"No data available for the location: {prompting}. Please try another location."
+                    full_response = f"No data available for the location: {prompting}. Please try another information."
             
             response = call_agent_app(full_response)
             full_response = ""
